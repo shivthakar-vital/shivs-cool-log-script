@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VERSION: 2.6.0
+# VERSION: 2.7.0
 set -euo pipefail
 shopt -s nullglob
 
@@ -24,16 +24,49 @@ ssh_target() {
   fi
 }
 
+# Add/edit service lists here. Keys are the device_type argument.
+# (Plain case statement instead of an associative array so this also
+# works on macOS's default bash 3.2, which has no `declare -A`.)
+services_for() {
+  case "$1" in
+  cc)         echo "cc-driver-integrated.service conductor-integrated.service" ;;
+  ht)         echo "ht-driver-integrated.service conductor-integrated.service" ;;
+  ia)         echo "ia-driver-integrated.service conductor-integrated.service" ;;
+  nuc)        echo "cc-driver-qa-cc-1c.service conductor-qa-cc-1c.service" ;;
+  inst)       echo "cc-driver-integrated.service ht-driver-integrated.service ia-driver-integrated.service ch-driver-integrated.service conductor-integrated.service" ;;
+  vkg)        echo "cc-driver-integrated.service ch-driver-integrated.service conductor-integrated.service" ;;
+  *)          echo "" ;;
+  esac
+}
+
+device_types() {
+  echo "cc ht ia nuc inst vkg"
+}
+
+
+# ---------------------------------------------------------------------------
+# EDIT THIS: the service list each device normally uses. This is used by the
+# glm menu only -- it pre-selects the type so you can just press Enter. The
+# command line always requires the type spelled out.
+default_type_for() {
+  case "${1#rpi-}" in
+  cherry|proto-0028)  echo "inst" ;;
+  loki)               echo "vkg" ;;
+  *)                  echo "" ;;
+  esac
+}
+# ---------------------------------------------------------------------------
+
 usage() {
   echo "Usage:" >&2
-  echo "  $0 <host>                                                        follow conductor logs live (Ctrl-C stops)" >&2
-  echo "  $0 [-n <nickname>] <host> <cc|ht|ia|nuc|inst|vkg> [minutes]          fetch last N minutes (default 10)" >&2
-  echo "  $0 [-n <nickname>] <host> <cc|ht|ia|nuc|inst|vkg> <since> <until>    fetch a specific time range" >&2
-  echo "  $0 archive                                                       archive today's LOGS_* folder now" >&2
+  echo "  $0 <host>                                    follow conductor logs live (Ctrl-C stops)" >&2
+  echo "  $0 [-n <nick>] <host> <type> [minutes]       fetch last N minutes (default 10)" >&2
+  echo "  $0 [-n <nick>] <host> <type> <since> <until> fetch a specific time range" >&2
+  echo "  $0 archive                                   archive today's LOGS_* folder now" >&2
   echo "" >&2
   echo "  host:         SSH host, e.g. rpi-tbn28. On its own, streams" >&2
   echo "                conductor-integrated.service live; nothing is saved." >&2
-  echo "  device_type:  which service list to pull (see case statement below)" >&2
+  echo "  type:         one of: $(device_types)  (required)" >&2
   echo "  minutes:      how many minutes of logs to pull, e.g. 10 (default: 10)" >&2
   echo "  since/until:  journalctl time strings, e.g. '12:00:00' or '2026-07-14 12:00:00'" >&2
   echo "  -n nickname:  label appended to every log filename, after the timestamp." >&2
@@ -52,6 +85,13 @@ archive_dir() {
   rsync -a --remove-source-files "$d"/ "$ARCHIVE_DIR/$d"/
   find "$d" -depth -type d -empty -delete
 }
+
+# Small query interface so the menu front-end never has to parse this file.
+case "${1:-}" in
+  --list-types)    device_types; exit 0 ;;
+  --list-services) services_for "${2:-}"; exit 0 ;;
+  --default-type)  default_type_for "${2:-}"; exit 0 ;;
+esac
 
 # Pull the -n/--name flag out first so it can sit anywhere on the line, then
 # hand the remaining words back to the positional parsing below untouched.
@@ -124,21 +164,11 @@ elif [[ $# -eq 3 ]]; then
   fi
 fi
 
-# Add/edit service lists here. Keys are the device_type argument.
-# (Plain case statement instead of an associative array so this also
-# works on macOS's default bash 3.2, which has no `declare -A`.)
-case "$DEVICE_TYPE" in
-  cc)         SERVICES="cc-driver-integrated.service conductor-integrated.service" ;;
-  ht)         SERVICES="ht-driver-integrated.service conductor-integrated.service" ;;
-  ia)         SERVICES="ia-driver-integrated.service conductor-integrated.service" ;;
-  nuc)        SERVICES="cc-driver-qa-cc-1c.service conductor-qa-cc-1c.service" ;;
-  inst)       SERVICES="cc-driver-integrated.service ht-driver-integrated.service ia-driver-integrated.service ch-driver-integrated.service conductor-integrated.service" ;;
-  vkg)        SERVICES="cc-driver-integrated.service ch-driver-integrated.service conductor-integrated.service" ;;
-  *)
-    echo "Unknown device type '$DEVICE_TYPE'. Valid: cc ht ia nuc inst" >&2
-    exit 1
-    ;;
-esac
+SERVICES="$(services_for "$DEVICE_TYPE")"
+if [[ -z "$SERVICES" ]]; then
+  echo "Unknown device type '$DEVICE_TYPE'. Valid: $(device_types)" >&2
+  exit 1
+fi
 
 HOST_SHORT="${HOST#rpi-}"
 OUT_DIR="LOGS_$(date +%m_%d_%y)"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VERSION: 1.0.0
+# VERSION: 1.1.0
 # Menu front-end for shivs_cool_log_script.sh -- run it as `glm`.
 # Every screen just builds a normal command line and prints it before running,
 # so anyone who uses this a few times can graduate to typing `gl` directly.
@@ -36,11 +36,15 @@ FZF_OPTS=(
 # --- data pulled from the main script, so the menu can never drift from it ---
 
 device_types() {
-  sed -n 's/^  \([a-z][a-z0-9]*\))[[:space:]]*SERVICES=.*/\1/p' "$SCRIPT"
+  "$SCRIPT" --list-types | tr ' ' '\n'
 }
 
 services_for() {
-  sed -n 's/^  '"$1"')[[:space:]]*SERVICES="\([^"]*\)".*/\1/p' "$SCRIPT"
+  "$SCRIPT" --list-services "$1"
+}
+
+default_type_for() {
+  "$SCRIPT" --default-type "$1"
 }
 
 # Turn "cc-driver-integrated.service conductor-integrated.service" into "cc, conductor"
@@ -137,11 +141,16 @@ while true; do
     ;;
 
   type)
+    DEFAULT_TYPE="$(default_type_for "$HOST")"
+    TYPE_HEADER="$HOST -- which services?                     ESC back"
+    [[ -n "$DEFAULT_TYPE" ]] && \
+      TYPE_HEADER="$HOST -- default is '$DEFAULT_TYPE', Enter accepts   ESC back"
     if ! DEVICE="$(device_types | while read -r t; do
           printf '%-6s %s\n' "$t" "$(short_services "$t")"
         done | fzf "${FZF_OPTS[@]}" \
+        --query="$DEFAULT_TYPE" \
         --prompt='services> ' \
-        --header="$HOST -- which services?                     ESC back" \
+        --header="$TYPE_HEADER" \
         --preview="bash '$SELF' --preview-type {1}" )"; then
       step=host
       continue

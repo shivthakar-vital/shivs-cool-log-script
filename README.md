@@ -131,6 +131,11 @@ stop using the menu when you're ready.
 
 The device list shows your recent pulls for each host, including nicknames.
 
+Devices that always use the same services have that type pre-selected, so you
+can just press Enter — `cherry` and `proto-0028` come up on `inst`, `loki` on
+`vkg`. Backspace to clear it and pick something else. This is a menu
+convenience only; `gl` on the command line always wants the type spelled out.
+
 ---
 
 ## Where logs go
@@ -180,8 +185,23 @@ HOSTS=(
 )
 ```
 
-Service types are read out of the main script at runtime, so adding one to the
-`case` statement there makes it show up in the menu automatically.
+**`~/shivs_cool_log_script.sh`** — the type each device normally uses, which
+is what the menu pre-selects. Devices not listed here just open the picker with
+nothing filled in.
+
+```bash
+default_type_for() {
+  case "${1#rpi-}" in
+  cherry|proto-0028)  echo "inst" ;;
+  loki)               echo "vkg" ;;
+  *)                  echo "" ;;
+  esac
+}
+```
+
+Service types themselves live in `services_for()` in the same file, and the
+menu asks the script for them at runtime — so adding a type there makes it show
+up in the menu with no second edit.
 
 ---
 
