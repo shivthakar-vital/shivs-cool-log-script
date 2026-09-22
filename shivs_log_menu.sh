@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VERSION: 1.1.0
+# VERSION: 1.2.0
 # Menu front-end for shivs_cool_log_script.sh -- run it as `glm`.
 # Every screen just builds a normal command line and prints it before running,
 # so anyone who uses this a few times can graduate to typing `gl` directly.
@@ -162,6 +162,8 @@ while true; do
   when)
     if ! WHEN="$(printf '%s\n' \
         'live          follow conductor now (Ctrl-C stops)' \
+        '2 min         last 2 minutes' \
+        '5 min         last 5 minutes' \
         '10 min        last 10 minutes' \
         '30 min        last 30 minutes' \
         '60 min        last hour' \
@@ -195,7 +197,7 @@ fi
 
 SINCE=""; UNTIL=""; MINUTES=""
 case "$WHEN" in
-  10|30|60)  MINUTES="$WHEN" ;;
+  2|5|10|30|60)  MINUTES="$WHEN" ;;
   today)     SINCE="today"; UNTIL="now" ;;
   custom)
     printf '  minutes: '
