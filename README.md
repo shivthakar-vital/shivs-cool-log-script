@@ -37,19 +37,6 @@ It asks one question — your account name on the lab devices, i.e. the
 - adds `gl` and `glm` to your `~/.zshrc`
 - tests each device and tells you which ones still need your SSH key
 
-**3. Install your SSH key** on any device the installer flagged. If you don't
-have a key yet:
-
-```bash
-ssh-keygen -t ed25519
-```
-
-Then once per device — this prompts for your **lab password**, typed directly
-into ssh's own prompt. Nothing stores it:
-
-```bash
-ssh-copy-id yourname@cherry
-```
 
 **4. Reload your shell:**
 
