@@ -38,7 +38,7 @@ It asks one question — your account name on the lab devices, i.e. the
 - tests each device and tells you which ones still need your SSH key
 
 
-**4. Reload your shell:**
+**3. Reload your shell:**
 
 ```bash
 source ~/.zshrc
