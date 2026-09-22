@@ -1,5 +1,26 @@
 # shivs-cool-log-script
 
+## Updating — run both commands
+
+Already set up? This is how you get the latest version. **Both steps are
+required.** `git pull` on its own updates this folder but not the scripts you
+actually run, so you'd stay on the old version with no warning.
+
+```bash
+cd shivs-cool-log-script && git pull && bash install.sh
+```
+
+Re-running the installer is safe: it backs up your current scripts, doesn't
+duplicate the `.zshrc` entries, and remembers your account name.
+
+Note that it **replaces** your local copies, so if you customised `HOSTS`,
+re-apply that afterwards or restore from the timestamped backup it leaves in
+your home directory.
+
+Setting up for the first time instead? Skip to [Setup](#setup).
+
+---
+
 Pull `journalctl` logs off the lab devices without SSHing in by hand, and tail
 them live. Two commands: `gl` for the command line, `glm` for a menu.
 
@@ -189,21 +210,6 @@ default_type_for() {
 Service types themselves live in `services_for()` in the same file, and the
 menu asks the script for them at runtime — so adding a type there makes it show
 up in the menu with no second edit.
-
----
-
-## Updating
-
-```bash
-cd shivs-cool-log-script && git pull && bash install.sh
-```
-
-Re-running the installer is safe: it backs up your current scripts, doesn't
-duplicate the `.zshrc` entries, and remembers your account name.
-
-Note that it **replaces** your local copies, so if you customised `HOSTS`,
-re-apply that afterwards or restore from the timestamped backup it leaves in
-your home directory.
 
 ---
 
