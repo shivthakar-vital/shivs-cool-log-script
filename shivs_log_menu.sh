@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VERSION: 1.2.0
+# VERSION: 1.3.0
 # Menu front-end for shivs_cool_log_script.sh -- run it as `glm`.
 # Every screen just builds a normal command line and prints it before running,
 # so anyone who uses this a few times can graduate to typing `gl` directly.
@@ -95,11 +95,16 @@ esac
 
 # --- order hosts by most recently pulled ------------------------------------
 
+# BSD stat (macOS) and GNU stat (Git Bash, Linux) spell this differently.
+mtime_of() {
+  stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || echo 0
+}
+
 host_last_epoch() {
   local h="$1" d t newest=0
   for d in "$LOG_ROOT"/LOGS_*/"$h" "$LOG_ROOT/$ARCHIVE_DIR"/LOGS_*/"$h"; do
     if [[ -d "$d" ]]; then
-      t="$(stat -f %m "$d" 2>/dev/null || echo 0)"
+      t="$(mtime_of "$d")"
       if [[ "$t" -gt "$newest" ]]; then newest="$t"; fi
     fi
   done

@@ -11,7 +11,7 @@ cd shivs-cool-log-script && git pull && bash install.sh
 ```
 
 Re-running the installer is safe: it backs up your current scripts, doesn't
-duplicate the `.zshrc` entries, and remembers your account name.
+duplicate the entries in your shell config, and remembers your account name.
 
 Note that it **replaces** your local copies, so if you customised `HOSTS`,
 re-apply that afterwards or restore from the timestamped backup it leaves in
@@ -34,15 +34,29 @@ glm                    # pick device / services / timeframe from a menu
 
 ## Setup
 
-Requires macOS with [Homebrew](https://brew.sh). Takes about two minutes.
+Works on **macOS** and on **Windows** under Git Bash. Takes about two minutes
+either way. Steps 2 and 3 are identical on both; only step 1 differs.
 
-**1. Install `fzf`** (needed for the `glm` menu):
+### 1. Install the prerequisites
+
+**macOS** — needs [Homebrew](https://brew.sh):
 
 ```bash
 brew install fzf
 ```
 
-**2. Clone and run the installer:**
+**Windows** — needs [Git for Windows](https://git-scm.com/download/win), which
+provides both Git Bash and `ssh`. Install it first, then open **Git Bash** (not
+PowerShell, not CMD) and run everything below in that window:
+
+```bash
+winget install fzf
+```
+
+If `winget` isn't available, `scoop install fzf` or `choco install fzf` work
+too. Close and reopen Git Bash afterwards so `fzf` lands on your `PATH`.
+
+### 2. Clone and run the installer
 
 ```bash
 git clone https://github.com/shivthakar-vital/shivs-cool-log-script.git
@@ -53,19 +67,38 @@ bash install.sh
 It asks one question — your account name on the lab devices, i.e. the
 `yourname` in `ssh yourname@cherry`. It never asks for a password. Then it:
 
+- detects whether you're on macOS or Windows and adapts
 - copies the scripts to your home directory (backing up anything already there)
 - sets `SSH_USER` so you don't have to type `yourname@` every time
-- adds `gl` and `glm` to your `~/.zshrc`
+- adds `gl` and `glm` to your `~/.zshrc` (macOS) or `~/.bashrc` (Windows)
 - tests each device and tells you which ones still need your SSH key
 
+### 3. Reload your shell
 
-**3. Reload your shell:**
+**macOS:**
 
 ```bash
 source ~/.zshrc
 ```
 
+**Windows:**
+
+```bash
+source ~/.bashrc
+```
+
 That's it. `glm` should now open the menu.
+
+### Notes for Windows
+
+- **Always use Git Bash.** `gl` and `glm` are shell functions; they don't exist
+  in PowerShell or CMD.
+- **Logs land in your Git Bash home**, which is your normal Windows user folder
+  — `C:\Users\yourname\LOGS_10_09_26\...`. You can open it in Explorer
+  normally.
+- **If every line errors with `$'\r': command not found`**, the scripts were
+  checked out with Windows line endings. The repo pins them to LF via
+  `.gitattributes`, so re-cloning fixes it.
 
 ---
 
@@ -215,8 +248,10 @@ up in the menu with no second edit.
 
 ## Troubleshooting
 
-**`zsh: command not found: gl`** — your shell hasn't re-read its config.
-`source ~/.zshrc`, or open a new terminal.
+**`command not found: gl`** — your shell hasn't re-read its config.
+`source ~/.zshrc` on macOS, `source ~/.bashrc` on Windows, or just open a new
+terminal. On Windows, also check you're in **Git Bash** — these are shell
+functions and don't exist in PowerShell or CMD.
 
 **"not connected" / permission denied** — `SSH_USER` is probably empty or
 wrong. Every prompt now echoes the full target, so check what it prints:
@@ -228,10 +263,20 @@ Fetching ht-driver-integrated.service from yourname@cherry -> ...
 If there's no `yourname@`, set it in `~/shivs_cool_log_script.sh`.
 
 **Asked for a password on every run** — your SSH key isn't on that device yet.
-Run `ssh-copy-id yourname@<host>` once.
+Run `ssh-copy-id yourname@<host>` once. If Git Bash says `ssh-copy-id: command
+not found`, use this instead:
+
+```bash
+cat ~/.ssh/id_ed25519.pub | ssh yourname@<host> "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+```
 
 **`-- No entries --`** — the fetch worked; those services just logged nothing
 in that window. Widen the timeframe.
 
 **`glm` does nothing / command not found** — `fzf` isn't installed.
-`brew install fzf`.
+`brew install fzf` on macOS, `winget install fzf` on Windows, then reopen your
+terminal.
+
+**Every line errors with `$'\r': command not found`** (Windows) — the scripts
+were checked out with CRLF line endings. `.gitattributes` pins them to LF, so
+delete the folder and re-clone.
