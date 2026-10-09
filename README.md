@@ -172,6 +172,9 @@ stop using the menu when you're ready.
 
 The device list shows your recent pulls for each host, including nicknames.
 
+Need a device that isn't listed? Pick `+ other host...` and type its name — it
+gets remembered in `~/.gl_hosts` and appears in the picker from then on.
+
 Devices that always use the same services have that type pre-selected, so you
 can just press Enter — `cherry` and `proto-0028` come up on `inst`, `loki` on
 `vkg`. Backspace to clear it and pick something else. This is a menu
@@ -213,9 +216,8 @@ You can override it per-run without editing anything:
 LOG_SSH_USER=someoneelse gl cherry
 ```
 
-**`~/shivs_log_menu.sh`** — which devices appear in the `glm` picker. Anything
-not listed can still be reached with `+ other host...`, or by using `gl`
-directly.
+**`~/shivs_log_menu.sh`** — which devices ship in the `glm` picker. This is the
+shared list; add a device here and commit it so everyone gets it.
 
 ```bash
 HOSTS=(
@@ -225,6 +227,18 @@ HOSTS=(
   tbox-006
 )
 ```
+
+**`~/.gl_hosts`** — your own additions. Pick `+ other host...` in the menu, type
+a hostname, and it's appended here automatically, so it's in the list from then
+on. One hostname per line; delete a line to forget it, delete the file to
+forget them all. It isn't tracked by git, so upgrades leave it alone.
+
+```
+rpi-tbn28
+qa-cc-1a
+```
+
+The picker shows both lists merged, most recently used first.
 
 **`~/shivs_cool_log_script.sh`** — the type each device normally uses, which
 is what the menu pre-selects. Devices not listed here just open the picker with
