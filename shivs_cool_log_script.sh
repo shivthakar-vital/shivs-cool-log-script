@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VERSION: 2.7.0
+# VERSION: 2.8.0
 set -euo pipefail
 shopt -s nullglob
 
@@ -82,7 +82,19 @@ usage() {
 archive_dir() {
   local d="$1"
   mkdir -p "$ARCHIVE_DIR/$d"
-  rsync -a --remove-source-files "$d"/ "$ARCHIVE_DIR/$d"/
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a --remove-source-files "$d"/ "$ARCHIVE_DIR/$d"/
+  else
+    # Git Bash has no rsync. Recreate the tree and move the files across one
+    # at a time -- slower, but these are small text files and it needs nothing
+    # beyond find/mv.
+    find "$d" -type d | while read -r sub; do
+      mkdir -p "$ARCHIVE_DIR/$sub"
+    done
+    find "$d" -type f | while read -r f; do
+      mv -f "$f" "$ARCHIVE_DIR/$f"
+    done
+  fi
   find "$d" -depth -type d -empty -delete
 }
 

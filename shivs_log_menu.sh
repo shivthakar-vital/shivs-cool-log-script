@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VERSION: 1.2.0
+# VERSION: 1.4.0
 # Menu front-end for shivs_cool_log_script.sh -- run it as `glm`.
 # Every screen just builds a normal command line and prints it before running,
 # so anyone who uses this a few times can graduate to typing `gl` directly.
@@ -22,6 +22,10 @@ HOSTS=(
 # ---------------------------------------------------------------------------
 
 CUSTOM_LABEL="+ other host..."
+
+# Hosts typed in by hand get remembered here rather than in HOSTS above, so a
+# git pull can't wipe them. One hostname per line; delete a line to forget it.
+EXTRA_HOSTS="$LOG_ROOT/.gl_hosts"
 
 FZF_OPTS=(
   --height=45%
@@ -95,22 +99,44 @@ esac
 
 # --- order hosts by most recently pulled ------------------------------------
 
+# BSD stat (macOS) and GNU stat (Git Bash, Linux) spell this differently.
+mtime_of() {
+  stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || echo 0
+}
+
 host_last_epoch() {
   local h="$1" d t newest=0
   for d in "$LOG_ROOT"/LOGS_*/"$h" "$LOG_ROOT/$ARCHIVE_DIR"/LOGS_*/"$h"; do
     if [[ -d "$d" ]]; then
-      t="$(stat -f %m "$d" 2>/dev/null || echo 0)"
+      t="$(mtime_of "$d")"
       if [[ "$t" -gt "$newest" ]]; then newest="$t"; fi
     fi
   done
   printf '%s' "$newest"
 }
 
+# The shipped list plus anything this user has added, deduped.
+all_hosts() {
+  {
+    printf '%s\n' "${HOSTS[@]}"
+    if [[ -f "$EXTRA_HOSTS" ]]; then cat "$EXTRA_HOSTS"; fi
+  } | awk 'NF' | sort -u
+}
+
 sorted_hosts() {
   local h
-  for h in "${HOSTS[@]}"; do
+  all_hosts | while read -r h; do
     printf '%s\t%s\n' "$(host_last_epoch "$h")" "$h"
   done | sort -rn | cut -f2
+}
+
+remember_host() {
+  local h="$1"
+  if all_hosts | grep -qx "$h"; then
+    return 0
+  fi
+  printf '%s\n' "$h" >> "$EXTRA_HOSTS"
+  printf '  remembered %s -- it will be in the list next time.\n' "$h" >&2
 }
 
 [[ -x "$SCRIPT" ]] || { echo "Can't find $SCRIPT" >&2; exit 1; }
@@ -136,6 +162,11 @@ while true; do
       printf '  hostname: '
       read -r HOST
       [[ -z "$HOST" ]] && continue
+      if ! [[ "$HOST" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+        printf "  '%s' doesn't look like a hostname, ignoring.\n" "$HOST" >&2
+        continue
+      fi
+      remember_host "$HOST"
     fi
     step=type
     ;;
